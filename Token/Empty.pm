@@ -1,6 +1,7 @@
-## OpenCA::Token.pm 
+## OpenCA::Token::Empty.pm 
 ##
-## Copyright (C) 2003 Michael Bell <michael.bell@web.de>
+## Written by Michael Bell for the OpenCA project 2003
+## Copyright (C) 2003-2004 The OpenCA Project
 ## All rights reserved.
 ##
 ##    This library is free software; you can redistribute it and/or
@@ -26,15 +27,9 @@ use strict;
 
 package OpenCA::Token::Empty;
 
-use FileHandle;
-our ($STDERR, $STDOUT);
-$STDOUT = \*STDOUT;
-$STDERR = \*STDERR;
-
 our ($errno, $errval);
-our $AUTOLOAD;
 
-($OpenCA::Token::Empty::VERSION = '$Revision: 1.2 $' )=~ s/(?:^.*: (\d+))|(?:\s+\$$)/defined $1?"0\.9":""/eg;
+($OpenCA::Token::Empty::VERSION = '$Revision: 1.1.1.1 $' )=~ s/(?:^.*: (\d+))|(?:\s+\$$)/defined $1?"0\.9":""/eg;
 
 # Preloaded methods go here.
 
@@ -45,8 +40,6 @@ sub new {
 
     my $self = {
                 DEBUG     => 0,
-                debug_fd  => $STDOUT,
-                ## debug_msg => ()
                };
 
     bless $self, $class;
@@ -72,24 +65,39 @@ sub setError {
 
     return undef if (not $errno);
 
-    print $STDERR "PKI Master Alert: OpenCA::Token::Empty error\n";
-    print $STDERR "PKI Master Alert: Aborting all operations\n";
-    print $STDERR "PKI Master Alert: Error:   $errno\n";
-    print $STDERR "PKI Master Alert: Message: $errval\n";
-    print $STDERR "PKI Master Alert: debugging messages of empty token follow\n";
-    $self->{debug_fd} = $STDERR;
-    $self->debug ();
-    $self->{debug_fd} = $STDOUT;
+    $self->debug ("setError: $errno: $errval");
 
     ## support for: return $self->setError (1234, "Something fails.") if (not $xyz);
     return undef;
 }
 
+sub debug {
+
+    my $self = shift;
+
+    return 1 if (not $self->{DEBUG});
+
+    foreach my $msg (@_) {
+        print STDERR "OpenCA::Crypto->$msg\n";
+    }
+
+    return 1;
+}
+
 ## failover to default token
 sub AUTOLOAD {
     my $self = shift;
+    use vars qw($AUTOLOAD);
 
-    return $self->{CRYPTO}->$AUTOLOAD ( @_ );
+    $self->debug ("OpenCA::Token::EMPTY: AUTOLOAD => $AUTOLOAD");
+
+    return 1 if ($AUTOLOAD eq 'OpenCA::Token::EMPTY::DESTROY');
+
+    my $function = $AUTOLOAD;
+    $function =~ s/.*:://g;
+    my $ret = $self->{CRYPTO}->$function ( @_ );
+    $self->setError ($OpenCA::OpenSSL::errno, $OpenCA::OpenSSL::errval) if (not defined $ret);
+    return $ret;
 }
 
 1;

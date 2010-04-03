@@ -6,4 +6,7 @@ LICENSE
 Makefile.PL
 Token/Empty.pm
 Token/LunaCA3.pm
+Token/nCipher.pm
+Token/OpenSC.pm
 Token/OpenSSL.pm
+META.yml                                 Module meta-data (added by MakeMaker)
